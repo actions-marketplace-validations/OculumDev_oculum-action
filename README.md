@@ -26,7 +26,6 @@ permissions:
   contents: read
   pull-requests: write
   security-events: write
-  checks: write
 
 jobs:
   scan:
@@ -35,9 +34,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Run Oculum Security Scan
-        uses: oculum-security/oculum-action@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: oculum-security/oculum@v1
         with:
           depth: cheap
           fail-on: high
@@ -48,9 +45,7 @@ jobs:
 ### Free Tier (No API Key)
 
 ```yaml
-- uses: oculum-security/oculum-action@v1
-  env:
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+- uses: oculum-security/oculum@v1
   with:
     depth: cheap        # Fast pattern matching (free)
     fail-on: high       # Fail on critical/high issues
@@ -61,9 +56,7 @@ jobs:
 ### Pro Tier (With API Key)
 
 ```yaml
-- uses: oculum-security/oculum-action@v1
-  env:
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+- uses: oculum-security/oculum@v1
   with:
     depth: validated    # AI-assisted validation
     fail-on: high
@@ -73,9 +66,7 @@ jobs:
 ### Scan Specific Directory
 
 ```yaml
-- uses: oculum-security/oculum-action@v1
-  env:
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+- uses: oculum-security/oculum@v1
   with:
     working-directory: ./src
     depth: cheap
@@ -84,35 +75,17 @@ jobs:
 ### Report Only (Never Fail)
 
 ```yaml
-- uses: oculum-security/oculum-action@v1
-  env:
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+- uses: oculum-security/oculum@v1
   with:
     depth: cheap
     fail-on: none       # Never fail the workflow
 ```
 
-### AI-Focused Security (LLM Apps)
-
-Only fail on AI-specific vulnerabilities:
-
-```yaml
-- uses: oculum-security/oculum-action@v1
-  env:
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  with:
-    depth: cheap
-    fail-on: medium
-    fail-on-categories: 'ai-*'   # Only fail on AI vulnerabilities
-```
-
 ### Use Outputs in Subsequent Steps
 
 ```yaml
-- uses: oculum-security/oculum-action@v1
+- uses: oculum-security/oculum@v1
   id: scan
-  env:
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   with:
     depth: cheap
 
@@ -123,17 +96,21 @@ Only fail on AI-specific vulnerabilities:
     echo "Status: ${{ steps.scan.outputs.status }}"
 ```
 
-### Incremental Scanning (PRs Only)
-
-Only scan files changed in the PR:
+### Matrix Build with Multiple Depths
 
 ```yaml
-- uses: oculum-security/oculum-action@v1
-  env:
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  with:
-    depth: cheap
-    incremental: auto   # Only scan changed files on PRs
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        depth: [cheap, validated]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oculum-security/oculum@v1
+        with:
+          depth: ${{ matrix.depth }}
+          oculum-api-key: ${{ matrix.depth != 'cheap' && secrets.OCULUM_API_KEY || '' }}
 ```
 
 ## Inputs
@@ -142,23 +119,15 @@ Only scan files changed in the PR:
 |-------|-------------|----------|---------|
 | `depth` | Scan depth: `cheap` (free), `validated` (AI validation), `deep` (full semantic) | No | `cheap` |
 | `fail-on` | Fail threshold: `critical`, `high`, `medium`, `low`, `none` | No | `high` |
-| `fail-on-categories` | Only fail on specific categories (e.g., `ai-*`, `secrets-*`) | No | - |
 | `comment` | Post PR comment with results | No | `true` |
 | `sarif` | Upload SARIF to Code Scanning | No | `true` |
 | `oculum-api-key` | API key for Pro features | No | - |
 | `working-directory` | Directory to scan | No | `.` |
-| `include-patterns` | Glob patterns for files to include (comma-separated) | No | - |
-| `exclude-patterns` | Glob patterns for files to exclude (comma-separated) | No | - |
-| `incremental` | Incremental scanning: `auto`, `true`, `false` | No | `auto` |
-| `baseline` | Baseline mode: `auto`, `create`, `compare`, `none` | No | `auto` |
-| `baseline-branch` | Branch to fetch baseline from | No | `main` |
-| `fail-on-new` | Fail threshold for NEW findings only | No | `high` |
 
 ## Outputs
 
 | Output | Description |
 |--------|-------------|
-| `exit-code` | Exit code: 0=success, 1=findings, 2=config error, 3=scan error |
 | `findings` | Total number of findings |
 | `blocking` | Number of blocking issues (critical + high) |
 | `critical` | Number of critical findings |
@@ -167,14 +136,10 @@ Only scan files changed in the PR:
 | `low` | Number of low findings |
 | `info` | Number of informational findings |
 | `status` | `pass` or `fail` |
-| `tier` | Authenticated tier (`free`, `starter`, `pro`, `max`) |
+| `tier` | Authenticated tier (`free`, `pro`, `enterprise`) |
 | `sarif-file` | Path to SARIF file |
 | `scan-duration` | Scan duration in milliseconds |
 | `files-scanned` | Number of files scanned |
-| `incremental-mode` | Whether incremental scanning was used |
-| `changed-files` | Number of changed files (when incremental) |
-| `new-findings` | Number of new findings (vs baseline) |
-| `fixed-findings` | Number of fixed findings (vs baseline) |
 
 ## Scan Depths
 
@@ -238,15 +203,7 @@ permissions:
 
 ### Action fails with "GITHUB_TOKEN is required"
 
-Make sure you're passing `GITHUB_TOKEN` in the `env` block:
-
-```yaml
-- uses: oculum-security/oculum-action@v1
-  env:
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-```
-
-And have the `contents: read` permission:
+Add the `contents: read` permission to your workflow:
 
 ```yaml
 permissions:
@@ -265,16 +222,14 @@ permissions:
 Or disable SARIF upload:
 
 ```yaml
-- uses: oculum-security/oculum-action@v1
-  env:
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+- uses: oculum-security/oculum@v1
   with:
     sarif: false
 ```
 
 ### "Scan depth requires API key" warning
 
-The `validated` and `deep` depths require an Oculum subscription. Either:
+The `validated` and `deep` depths require a Pro subscription. Either:
 
 1. Get an API key at [oculum.dev/pricing](https://oculum.dev/pricing)
 2. Use `depth: cheap` for free scans
@@ -285,31 +240,13 @@ Check that:
 1. The workflow is triggered on `pull_request` event
 2. `comment: true` is set (default)
 3. `pull-requests: write` permission is granted
-4. `GITHUB_TOKEN` is passed in the `env` block
-
-### PR comments not updating
-
-The action updates existing comments instead of creating new ones. If you're not seeing updates, check the workflow run logs for errors.
-
-## Configuration File
-
-The action supports `oculum.config.json` in your repository root:
-
-```json
-{
-  "depth": "cheap",
-  "failOn": "high",
-  "ignore": ["**/test/**", "**/*.test.ts"],
-  "include": ["src/**"]
-}
-```
-
-Action inputs take precedence over config file values.
 
 ## Support
 
-- [Documentation](https://oculum.dev/docs/github-action)
-- [Report Issues](https://github.com/oculum-security/oculum-action/issues)
+- 📖 [Documentation](https://oculum.dev/docs)
+- 🐛 [Report Issues](https://github.com/oculum-security/oculum/issues)
+- 💬 [Discord Community](https://discord.gg/oculum)
+- 📧 [Email Support](mailto:support@oculum.dev)
 
 ## License
 

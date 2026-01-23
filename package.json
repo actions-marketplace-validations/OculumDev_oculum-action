@@ -1,27 +1,8 @@
 {
   "name": "@oculum/github-action",
-  "version": "1.0.3",
-  "description": "Oculum Security Scanner GitHub Action - AI-native security for LLM-powered applications",
+  "version": "1.0.2",
+  "description": "Oculum Security Scanner GitHub Action",
   "main": "dist/index.js",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/oculum-security/oculum-action.git"
-  },
-  "homepage": "https://oculum.dev",
-  "bugs": {
-    "url": "https://github.com/oculum-security/oculum-action/issues"
-  },
-  "keywords": [
-    "github-action",
-    "security",
-    "scanner",
-    "sast",
-    "ai-security",
-    "llm",
-    "prompt-injection",
-    "vulnerability"
-  ],
-  "license": "MIT",
   "scripts": {
     "build": "esbuild src/index.ts --bundle --platform=node --target=node20 --outfile=dist/index.js",
     "build:watch": "npm run build -- --watch",
@@ -33,8 +14,8 @@
   "dependencies": {
     "@actions/core": "^1.10.1",
     "@actions/github": "^6.0.0",
-    "@oculum/scanner": "^1.0.11",
-    "@oculum/shared": "^1.0.6",
+    "@oculum/scanner": "*",
+    "@oculum/shared": "*",
     "minimatch": "^10.1.1"
   },
   "devDependencies": {

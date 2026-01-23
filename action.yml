@@ -1,9 +1,5 @@
 name: 'Oculum Security Scan'
-description: |
-  AI-native security scanner for LLM-powered applications. Detects prompt injection, RAG vulnerabilities, overpermissive AI tools, and traditional security issues.
-
-  Supports configuration via oculum.config.json file in the repository root.
-  Action inputs take precedence over config file values.
+description: 'AI-native security scanner for LLM-powered applications. Detects prompt injection, RAG vulnerabilities, overpermissive AI tools, and traditional security issues.'
 author: 'Oculum Security'
 
 branding:
@@ -69,20 +65,6 @@ inputs:
     required: false
   exclude-patterns:
     description: 'Glob patterns for files to exclude (comma-separated). Example: "**/*.test.ts,**/fixtures/**"'
-    required: false
-  incremental:
-    description: |
-      Only scan files changed in the PR or push:
-      - auto: Enable incremental scanning for PRs, full scan for pushes (default)
-      - true: Always use incremental scanning (requires git history)
-      - false: Always do full scan
-    required: false
-    default: 'auto'
-  diff-base:
-    description: |
-      Base ref for incremental scanning diff comparison.
-      Defaults to the PR base branch or 'origin/main' for pushes.
-      Example: "origin/main", "HEAD~5", "v1.0.0"
     required: false
   baseline:
     description: |
@@ -158,10 +140,6 @@ outputs:
     description: 'Scan duration in milliseconds'
   files-scanned:
     description: 'Number of files scanned'
-  incremental-mode:
-    description: 'Whether incremental scanning was used ("true" or "false")'
-  changed-files:
-    description: 'Number of changed files (when incremental mode is used)'
   new-findings:
     description: 'Number of new findings (not in baseline)'
   fixed-findings:
