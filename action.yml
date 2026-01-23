@@ -1,5 +1,5 @@
 name: 'Oculum Security Scan'
-description: 'AI-native security scanner for LLM-powered applications. Detects prompt injection, RAG vulnerabilities, overpermissive AI tools, and traditional security issues.'
+description: 'AI-native security scanner for LLM-powered applications. Detects prompt injection, RAG vulnerabilities, overpermissive AI tools, and traditional security issues and many more.'
 author: 'Oculum Security'
 
 branding:
@@ -12,7 +12,7 @@ inputs:
       Scan depth level:
       - cheap: Fast pattern matching (free, runs locally)
       - validated: AI-assisted validation to reduce false positives (requires API key)
-      - deep: Full semantic analysis with detailed reports (requires API key)
+      - deep: Full semantic analysis with detailed reports (Coming Soon)
     required: false
     default: 'cheap'
   fail-on:
