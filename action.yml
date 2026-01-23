@@ -1,0 +1,178 @@
+name: 'Oculum Security Scan'
+description: |
+  AI-native security scanner for LLM-powered applications. Detects prompt injection, RAG vulnerabilities, overpermissive AI tools, and traditional security issues.
+
+  Supports configuration via oculum.config.json file in the repository root.
+  Action inputs take precedence over config file values.
+author: 'Oculum Security'
+
+branding:
+  icon: 'shield'
+  color: 'purple'
+
+inputs:
+  depth:
+    description: |
+      Scan depth level:
+      - cheap: Fast pattern matching (free, runs locally)
+      - validated: AI-assisted validation to reduce false positives (requires API key)
+      - deep: Full semantic analysis with detailed reports (requires API key)
+    required: false
+    default: 'cheap'
+  fail-on:
+    description: |
+      Fail the workflow if findings meet or exceed this severity threshold:
+      - critical: Only fail on critical issues
+      - high: Fail on critical or high issues (recommended)
+      - medium: Fail on medium or higher
+      - low: Fail on low or higher
+      - none: Never fail (report only)
+    required: false
+    default: 'high'
+  fail-on-categories:
+    description: |
+      Fail only on specific vulnerability categories (comma-separated).
+      Supports wildcards like ai-*, secrets-*, owasp-*.
+      When used with fail-on, both severity AND category must match.
+
+      Examples:
+      - "ai-*" - Fail on any AI-related vulnerability
+      - "secrets-*,ai-*" - Fail on secrets or AI vulnerabilities
+      - "sql_injection,xss" - Fail on specific categories
+
+      Category groups:
+      - ai-* : All AI categories (prompt injection, RAG, MCP, etc.)
+      - secrets-* : hardcoded_secret, high_entropy_string, sensitive_variable
+      - owasp-* : sql_injection, xss, command_injection, missing_auth, etc.
+    required: false
+    default: ''
+  comment:
+    description: 'Post a PR comment with scan results. Set to "false" to disable.'
+    required: false
+    default: 'true'
+  sarif:
+    description: 'Upload SARIF results to GitHub Code Scanning. Requires "security-events: write" permission.'
+    required: false
+    default: 'true'
+  oculum-api-key:
+    description: |
+      Oculum API key for authenticated scans. Required for validated/deep depths.
+      Store as a repository secret and reference as: OCULUM_API_KEY
+      Get your API key at https://oculum.dev/dashboard/api-keys
+    required: false
+  working-directory:
+    description: 'Directory to scan relative to repository root. Defaults to entire repository.'
+    required: false
+    default: '.'
+  include-patterns:
+    description: 'Glob patterns for files to include (comma-separated). Example: "src/**/*.ts,lib/**/*.js"'
+    required: false
+  exclude-patterns:
+    description: 'Glob patterns for files to exclude (comma-separated). Example: "**/*.test.ts,**/fixtures/**"'
+    required: false
+  incremental:
+    description: |
+      Only scan files changed in the PR or push:
+      - auto: Enable incremental scanning for PRs, full scan for pushes (default)
+      - true: Always use incremental scanning (requires git history)
+      - false: Always do full scan
+    required: false
+    default: 'auto'
+  diff-base:
+    description: |
+      Base ref for incremental scanning diff comparison.
+      Defaults to the PR base branch or 'origin/main' for pushes.
+      Example: "origin/main", "HEAD~5", "v1.0.0"
+    required: false
+  baseline:
+    description: |
+      Baseline mode for diff comparison:
+      - auto: Use baseline if exists, otherwise show all findings (default)
+      - create: Create/update baseline from current scan
+      - compare: Only show new findings vs baseline (fail if no baseline)
+      - none: Ignore baseline, show all findings
+    required: false
+    default: 'auto'
+  baseline-branch:
+    description: 'Branch to fetch baseline from (default: main)'
+    required: false
+    default: 'main'
+  fail-on-new:
+    description: |
+      Fail threshold for NEW findings only (when using baseline):
+      - critical: Only fail on new critical issues
+      - high: Fail on new critical or high issues (recommended)
+      - medium: Fail on new medium or higher
+      - low: Fail on new low or higher
+      - none: Never fail on new findings
+    required: false
+    default: 'high'
+  ai-context:
+    description: |
+      Generate .oculum/ai-context.md file for AI coding assistants.
+      This file helps AI assistants understand and fix security findings.
+    required: false
+    default: 'false'
+  ai-context-commit:
+    description: |
+      Commit the ai-context.md file to the PR branch.
+      Only applies when ai-context is enabled and running on a PR.
+    required: false
+    default: 'true'
+  ai-context-comment:
+    description: |
+      Post AI context as a PR comment in addition to the main scan comment.
+      Only applies when ai-context is enabled and running on a PR.
+    required: false
+    default: 'false'
+
+outputs:
+  exit-code:
+    description: |
+      Standardized exit code for CI integration:
+      - 0: Success - No findings above threshold
+      - 1: Findings - Security findings exceed threshold
+      - 2: Config error - Invalid configuration
+      - 3: Scan error - Runtime errors
+  findings:
+    description: 'Total number of security findings detected'
+  blocking:
+    description: 'Number of blocking issues (critical + high severity)'
+  critical:
+    description: 'Number of critical severity findings'
+  high:
+    description: 'Number of high severity findings'
+  medium:
+    description: 'Number of medium severity findings'
+  low:
+    description: 'Number of low severity findings'
+  info:
+    description: 'Number of informational findings'
+  status:
+    description: 'Scan status: "pass" if no blocking issues, "fail" otherwise'
+  tier:
+    description: 'Authenticated tier: "free", "starter", "pro", or "enterprise"'
+  sarif-file:
+    description: 'Path to generated SARIF file (if sarif input is true)'
+  scan-duration:
+    description: 'Scan duration in milliseconds'
+  files-scanned:
+    description: 'Number of files scanned'
+  incremental-mode:
+    description: 'Whether incremental scanning was used ("true" or "false")'
+  changed-files:
+    description: 'Number of changed files (when incremental mode is used)'
+  new-findings:
+    description: 'Number of new findings (not in baseline)'
+  fixed-findings:
+    description: 'Number of fixed findings (in baseline, not in current)'
+  has-new-blocking:
+    description: 'Whether there are new critical/high findings'
+  ai-context-path:
+    description: 'Path to the generated ai-context.md file (if ai-context is enabled)'
+  ai-context-url:
+    description: 'URL to the committed ai-context.md file (if ai-context-commit is enabled)'
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'
