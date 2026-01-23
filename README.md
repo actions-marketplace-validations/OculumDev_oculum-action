@@ -1,13 +1,13 @@
-# Oculum Security Scanner - GitHub Action
+# Oculum Security Scan
 
-🛡️ AI-native security scanner for LLM-powered applications. Detects prompt injection, RAG vulnerabilities, overpermissive AI tools, and traditional security issues.
+AI-native security scanner for LLM-powered applications. Detects prompt injection, hardcoded secrets, SQL injection, XSS, and more.
 
 ## Features
 
-- **AI-Era Security**: Detects vulnerabilities specific to LLM applications (prompt injection, RAG exfiltration, unsafe tool execution)
-- **Traditional SAST**: Finds hardcoded secrets, SQL injection, XSS, and other common vulnerabilities
-- **Low False Positives**: AI-assisted validation reduces noise (Pro tier)
-- **GitHub Integration**: PR comments, check annotations, and SARIF upload to Code Scanning
+- **AI-Era Security**: Detects prompt injection, RAG vulnerabilities, unsafe AI tool execution
+- **Traditional SAST**: Finds hardcoded secrets, SQL injection, XSS, command injection
+- **Low False Positives**: AI-assisted validation reduces noise (requires API key)
+- **GitHub Integration**: PR comments, inline annotations on diffs
 - **Free Tier**: Pattern-matching scans run locally at no cost
 
 ## Quick Start
@@ -25,7 +25,7 @@ on:
 permissions:
   contents: read
   pull-requests: write
-  security-events: write
+  checks: write
 
 jobs:
   scan:
@@ -34,7 +34,9 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Run Oculum Security Scan
-        uses: oculum-security/oculum@v1
+        uses: OculumDev/oculum-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           depth: cheap
           fail-on: high
@@ -45,18 +47,22 @@ jobs:
 ### Free Tier (No API Key)
 
 ```yaml
-- uses: oculum-security/oculum@v1
+- name: Run Oculum Security Scan
+  uses: OculumDev/oculum-action@v1
+  env:
+    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   with:
     depth: cheap        # Fast pattern matching (free)
     fail-on: high       # Fail on critical/high issues
-    comment: true       # Post PR comment
-    sarif: true         # Upload to Code Scanning
 ```
 
-### Pro Tier (With API Key)
+### With API Key (Validated Scan)
 
 ```yaml
-- uses: oculum-security/oculum@v1
+- name: Run Oculum Security Scan
+  uses: OculumDev/oculum-action@v1
+  env:
+    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   with:
     depth: validated    # AI-assisted validation
     fail-on: high
@@ -66,16 +72,22 @@ jobs:
 ### Scan Specific Directory
 
 ```yaml
-- uses: oculum-security/oculum@v1
+- name: Run Oculum Security Scan
+  uses: OculumDev/oculum-action@v1
+  env:
+    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   with:
     working-directory: ./src
-    depth: cheap
+    exclude-patterns: '**/*.test.ts,**/fixtures/**'
 ```
 
 ### Report Only (Never Fail)
 
 ```yaml
-- uses: oculum-security/oculum@v1
+- name: Run Oculum Security Scan
+  uses: OculumDev/oculum-action@v1
+  env:
+    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   with:
     depth: cheap
     fail-on: none       # Never fail the workflow
@@ -84,8 +96,11 @@ jobs:
 ### Use Outputs in Subsequent Steps
 
 ```yaml
-- uses: oculum-security/oculum@v1
+- name: Run Oculum Security Scan
+  uses: OculumDev/oculum-action@v1
   id: scan
+  env:
+    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   with:
     depth: cheap
 
@@ -96,33 +111,18 @@ jobs:
     echo "Status: ${{ steps.scan.outputs.status }}"
 ```
 
-### Matrix Build with Multiple Depths
-
-```yaml
-jobs:
-  scan:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        depth: [cheap, validated]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: oculum-security/oculum@v1
-        with:
-          depth: ${{ matrix.depth }}
-          oculum-api-key: ${{ matrix.depth != 'cheap' && secrets.OCULUM_API_KEY || '' }}
-```
-
 ## Inputs
 
 | Input | Description | Required | Default |
 |-------|-------------|----------|---------|
-| `depth` | Scan depth: `cheap` (free), `validated` (AI validation), `deep` (full semantic) | No | `cheap` |
+| `depth` | Scan depth: `cheap` (free), `validated` (AI validation) | No | `cheap` |
 | `fail-on` | Fail threshold: `critical`, `high`, `medium`, `low`, `none` | No | `high` |
+| `fail-on-categories` | Fail only on specific categories (e.g., `ai-*`, `secrets-*`) | No | - |
 | `comment` | Post PR comment with results | No | `true` |
-| `sarif` | Upload SARIF to Code Scanning | No | `true` |
-| `oculum-api-key` | API key for Pro features | No | - |
+| `oculum-api-key` | API key for validated scans | No | - |
 | `working-directory` | Directory to scan | No | `.` |
+| `include-patterns` | Glob patterns for files to include | No | - |
+| `exclude-patterns` | Glob patterns for files to exclude | No | - |
 
 ## Outputs
 
@@ -136,8 +136,6 @@ jobs:
 | `low` | Number of low findings |
 | `info` | Number of informational findings |
 | `status` | `pass` or `fail` |
-| `tier` | Authenticated tier (`free`, `pro`, `enterprise`) |
-| `sarif-file` | Path to SARIF file |
 | `scan-duration` | Scan duration in milliseconds |
 | `files-scanned` | Number of files scanned |
 
@@ -150,19 +148,12 @@ jobs:
 - **Method**: Pattern matching and heuristics
 - **Best for**: Quick CI checks, open source projects
 
-### Validated (Pro)
+### Validated (Requires API Key)
 
 - **Cost**: Requires API key
 - **Speed**: Medium
 - **Method**: Pattern matching + AI validation
 - **Best for**: Production code, reducing false positives
-
-### Deep (Pro)
-
-- **Cost**: Requires API key
-- **Speed**: Slower
-- **Method**: Full semantic analysis
-- **Best for**: Security audits, detailed reports
 
 ## Permissions
 
@@ -172,7 +163,7 @@ The action requires these permissions:
 permissions:
   contents: read          # Read repository files
   pull-requests: write    # Post PR comments
-  security-events: write  # Upload SARIF (optional)
+  checks: write           # Create check run annotations
 ```
 
 ## Vulnerability Categories
@@ -186,7 +177,6 @@ permissions:
 | `ai_overpermissive_tool` | AI tools with excessive permissions |
 | `ai_rag_exfiltration` | RAG queries exposing cross-tenant data |
 | `ai_endpoint_unprotected` | AI endpoints without auth/rate limiting |
-| `ai_schema_mismatch` | AI output used without validation |
 
 ### Traditional Vulnerabilities
 
@@ -197,56 +187,26 @@ permissions:
 | `xss` | Cross-site scripting vulnerabilities |
 | `command_injection` | Shell command injection |
 | `missing_auth` | Endpoints without authentication |
-| `data_exposure` | Sensitive data in logs or responses |
 
 ## Troubleshooting
 
-### Action fails with "GITHUB_TOKEN is required"
-
-Add the `contents: read` permission to your workflow:
-
-```yaml
-permissions:
-  contents: read
-```
-
-### SARIF upload fails
-
-Ensure you have the `security-events: write` permission:
-
-```yaml
-permissions:
-  security-events: write
-```
-
-Or disable SARIF upload:
-
-```yaml
-- uses: oculum-security/oculum@v1
-  with:
-    sarif: false
-```
-
-### "Scan depth requires API key" warning
-
-The `validated` and `deep` depths require a Pro subscription. Either:
-
-1. Get an API key at [oculum.dev/pricing](https://oculum.dev/pricing)
-2. Use `depth: cheap` for free scans
-
-### No findings in PR comment
+### PR comments not appearing
 
 Check that:
-1. The workflow is triggered on `pull_request` event
-2. `comment: true` is set (default)
-3. `pull-requests: write` permission is granted
+1. `GITHUB_TOKEN` is passed via `env`
+2. `pull-requests: write` permission is granted
+3. Workflow is triggered on `pull_request` event
+
+### "Scan depth requires API key" error
+
+The `validated` depth requires an API key. Either:
+1. Get an API key at [oculum.dev](https://oculum.dev)
+2. Use `depth: cheap` for free scans
 
 ## Support
 
-- 📖 [Documentation](https://oculum.dev/docs)
-- 🐛 [Report Issues](https://github.com/oculum-security/oculum/issues)
-- 💬 [Discord Community](https://discord.gg/oculum)
-- 📧 [Email Support](mailto:support@oculum.dev)
+- [Documentation](https://oculum.dev/docs)
+- [Report Issues](https://github.com/OculumDev/oculum-action/issues)
 
 ## License
 

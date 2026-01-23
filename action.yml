@@ -1,5 +1,5 @@
 name: 'Oculum Security Scan'
-description: 'AI-native security scanner for AI applications and AI-native developers to scan your code for AI vulnerabilities.'
+description: 'AI-native security scanner for LLM apps. Detects prompt injection, secrets, SQL injection, XSS and more.'
 author: 'Oculum Security'
 
 branding:
@@ -12,7 +12,6 @@ inputs:
       Scan depth level:
       - cheap: Fast pattern matching (free, runs locally)
       - validated: AI-assisted validation to reduce false positives (requires API key)
-      - deep: Full semantic analysis with detailed reports (Coming Soon)
     required: false
     default: 'cheap'
   fail-on:
@@ -52,7 +51,7 @@ inputs:
     default: 'true'
   oculum-api-key:
     description: |
-      Oculum API key for authenticated scans. Required for validated/deep depths.
+      Oculum API key for authenticated scans. Required for validated depth.
       Store as a repository secret and reference as: OCULUM_API_KEY
       Get your API key at https://oculum.dev/dashboard/api-keys
     required: false
